@@ -10,6 +10,8 @@ obj/
 
 # Database files
 Db.db
+Db.db-shm
+Db.db-wal
 
 # Secrets
 appsettings.json

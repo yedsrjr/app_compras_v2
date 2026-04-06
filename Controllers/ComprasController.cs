@@ -2,6 +2,7 @@
 using AppCompras.Models.ViewModels;
 using AppCompras.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace AppCompras.Controllers
 {
@@ -66,6 +67,26 @@ namespace AppCompras.Controllers
                     TempData["ErrorMessage"] = ultimaCompraResult.Message ?? menorValorResult.Message ?? "Nenhum dado encontrado.";
                 }
 
+                var itemOptions = BuildItemOptions(menorValorResult.Data ?? new List<MenorValorViewModel>());
+                if (!string.Equals(tipoBusca, "item", StringComparison.OrdinalIgnoreCase))
+                {
+                    HttpContext.Session.SetString("DashboardItemOptions", JsonSerializer.Serialize(itemOptions));
+                }
+                else
+                {
+                    var cached = HttpContext.Session.GetString("DashboardItemOptions");
+                    if (!string.IsNullOrWhiteSpace(cached))
+                    {
+                        var cachedOptions = JsonSerializer.Deserialize<List<ItemOptionViewModel>>(cached);
+                        if (cachedOptions != null && cachedOptions.Count > 0)
+                        {
+                            itemOptions = cachedOptions;
+                        }
+                    }
+                }
+
+                ViewBag.DashboardItemOptions = itemOptions;
+
                 var model = new ComprasViewModel
                 {
                     UltimaCompraItems = ultimaCompraResult.Data ?? new List<ItemCompraViewModel>(),
@@ -82,6 +103,72 @@ namespace AppCompras.Controllers
             {
                 Console.WriteLine($"ERRO: {ex.Message}");
                 TempData["ErrorMessage"] = $"Erro ao buscar dados: {ex.Message}";
+                return RedirectToAction("Index");
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Dashboard(string tipoBusca, string valorBusca, DateTime? dataInicio, DateTime? dataFim)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+            {
+                return RedirectToAction("Login", "Login");
+            }
+
+            try
+            {
+                var username = HttpContext.Session.GetString("Username") ?? "Sistema";
+                ViewBag.Username = HttpContext.Session.GetString("Name");
+                ViewBag.UserRole = HttpContext.Session.GetString("UserRole");
+
+                if (string.IsNullOrWhiteSpace(tipoBusca) || string.IsNullOrWhiteSpace(valorBusca))
+                {
+                    TempData["ErrorMessage"] = "Informe o tipo e o valor da busca para abrir o dashboard.";
+                    return RedirectToAction("Index");
+                }
+
+                var result = await context.BuscarMenorValor(tipoBusca, valorBusca, userId.Value, username, dataInicio, dataFim);
+                if (!result.Success)
+                {
+                    TempData["ErrorMessage"] = result.Message;
+                    return RedirectToAction("Index");
+                }
+
+                var itemOptions = BuildItemOptions(result.Data ?? new List<MenorValorViewModel>());
+                if (!string.Equals(tipoBusca, "item", StringComparison.OrdinalIgnoreCase))
+                {
+                    HttpContext.Session.SetString("DashboardItemOptions", JsonSerializer.Serialize(itemOptions));
+                }
+                else
+                {
+                    var cached = HttpContext.Session.GetString("DashboardItemOptions");
+                    if (!string.IsNullOrWhiteSpace(cached))
+                    {
+                        var cachedOptions = JsonSerializer.Deserialize<List<ItemOptionViewModel>>(cached);
+                        if (cachedOptions != null && cachedOptions.Count > 0)
+                        {
+                            itemOptions = cachedOptions;
+                        }
+                    }
+                }
+
+                ViewBag.DashboardItemOptions = itemOptions;
+                var model = new ComprasDashboardViewModel
+                {
+                    TipoBusca = tipoBusca,
+                    ValorBusca = valorBusca,
+                    DataInicio = dataInicio,
+                    DataFim = dataFim,
+                    MenorValorItems = result.Data ?? new List<MenorValorViewModel>()
+                };
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERRO: {ex.Message}");
+                TempData["ErrorMessage"] = $"Erro ao abrir dashboard: {ex.Message}";
                 return RedirectToAction("Index");
             }
         }
@@ -118,7 +205,26 @@ namespace AppCompras.Controllers
 
             return RedirectToAction("Index");
         }
+
+        private static List<ItemOptionViewModel> BuildItemOptions(List<MenorValorViewModel> items)
+        {
+            return items
+                .Select(i =>
+                {
+                    var desc = i.Description ?? string.Empty;
+                    var parts = desc.Split(" - ");
+                    var code = parts.Length > 1 ? parts[0].Trim() : string.Empty;
+                    var name = parts.Length > 1 ? string.Join(" - ", parts.Skip(1)).Trim() : desc.Trim();
+                    return new ItemOptionViewModel { Code = code, Name = name };
+                })
+                .Where(x => !string.IsNullOrWhiteSpace(x.Code))
+                .GroupBy(x => x.Code)
+                .Select(g => g.First())
+                .OrderBy(x => x.Code)
+                .ToList();
+        }
     }
 }
- 
-    
+
+
+

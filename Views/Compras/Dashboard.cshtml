@@ -1,0 +1,166 @@
+@model AppCompras.Models.ViewModels.ComprasDashboardViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Dashboard de Preço Médio";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/png" href="~/img/logo-40-anos.png" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/compras.css" />
+</head>
+<body>
+    <header class="page-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="~/img/logo-40-anos.png" alt="Logo 40 anos Fazenda Santa Fé" class="logo-img-small" />
+                <div class="header-text">
+                    <span class="subtitle">Dashboard de Preço</span>
+                </div>
+            </div>
+            <div class="user-section">
+                <div class="user-info">
+                    <span class="welcome">Bem-vindo, @ViewBag.Username</span>
+                    @if (ViewBag.UserRole != null)
+                    {
+                        <span class="role-badge">@ViewBag.UserRole</span>
+                    }
+                </div>
+                <a asp-action="Index" asp-controller="Compras" class="btn-logout">Voltar</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="content-wrapper">
+            <div class="page-title">
+                <h2>@ViewData["Title"]</h2>
+            </div>
+
+            @if (Model.MenorValorItems.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">📊</div>
+                    <h3>Sem dados para análise</h3>
+                    <p>Refaça a busca com outros parâmetros</p>
+                </div>
+            }
+            else
+            {
+                var requiresItem = !string.Equals(Model.TipoBusca, "item", StringComparison.OrdinalIgnoreCase);
+                var itemOptions = ViewBag.DashboardItemOptions as List<AppCompras.Models.ViewModels.ItemOptionViewModel>
+                    ?? new List<AppCompras.Models.ViewModels.ItemOptionViewModel>();
+
+                <div class="dashboard-filters">
+                    <label for="dashboardItemFilter">Item</label>
+                    <select id="dashboardItemFilter" class="search-select">
+                        <option value="">Selecione um item...</option>
+                        @foreach (var item in itemOptions)
+                        {
+                            <option value="@item.Code" selected="@(requiresItem ? false : item.Code == Model.ValorBusca)">
+                                @item.Code — @item.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                if (requiresItem)
+                {
+                    <div id="dashboardSelectHint" class="alert alert-error">
+                        Selecione um item para carregar o dashboard completo.
+                    </div>
+                }
+
+                <section id="analysisPanel" class="analysis-panel @(requiresItem ? "hidden" : "")">
+                    <div class="analysis-header">
+                        <div class="analysis-title">
+                            <div class="analysis-item" id="analysisItemTitle">Item</div>
+                            <div class="analysis-sub" id="analysisSubTitle">Fornecedor · Período</div>
+                        </div>
+                        <span class="analysis-badge" id="analysisCount">0 itens</span>
+                    </div>
+
+                    <div class="analysis-body">
+                        <div class="metric-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">PREÇO MÉDIO</div>
+                                <div class="metric-value" id="metricAvg">R$ 0,00</div>
+                                <div class="metric-sub" id="metricAvgUnit">por unidade</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">MENOR PREÇO</div>
+                                <div class="metric-value metric-green" id="metricMin">R$ 0,00</div>
+                                <div class="metric-sub" id="metricMinMeta">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">MAIOR PREÇO</div>
+                                <div class="metric-value metric-red" id="metricMax">R$ 0,00</div>
+                                <div class="metric-sub" id="metricMaxMeta">-</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">VARIAÇÃO</div>
+                                <div class="metric-value" id="metricVar">0,0%</div>
+                                <div class="metric-sub metric-red" id="metricVarMeta">mín → máx</div>
+                            </div>
+                        </div>
+
+                        <div class="analysis-charts">
+                            <div class="chart-card">
+                                <div class="chart-title">Evolução do preço unitário por compra</div>
+                                <div class="chart-canvas">
+                                    <canvas id="lineChart"></canvas>
+                                </div>
+                                <div class="chart-legend" id="lineLegend"></div>
+                            </div>
+
+                            <div class="chart-card">
+                                <div class="chart-title">Média por fornecedor</div>
+                                <div class="chart-canvas">
+                                    <canvas id="supplierBarChart"></canvas>
+                                </div>
+                                <div class="chart-legend" id="supplierLegend"></div>
+                            </div>
+                        </div>
+
+                        <div class="analysis-table">
+                            <div class="chart-title">Comparativo por pedido de compra</div>
+                            <div class="table-scroll">
+                                <table class="table-mini">
+                                    <thead>
+                                        <tr>
+                                            <th>Cód. PC</th>
+                                            <th>Data</th>
+                                            <th>Fornecedor</th>
+                                            <th>Qtd.</th>
+                                            <th>Preço Unit.</th>
+                                            <th>vs. Média</th>
+                                            <th>Valor Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="analysisTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <script>
+                    window.menorValorData = @Html.Raw(JsonSerializer.Serialize(Model.MenorValorItems));
+                    window.analysisFilters = {
+                        dataInicio: "@(Model.DataInicio?.ToString("yyyy-MM-dd") ?? "")",
+                        dataFim: "@(Model.DataFim?.ToString("yyyy-MM-dd") ?? "")"
+                    };
+                    window.dashboardRequiresItem = @(requiresItem.ToString().ToLower());
+                </script>
+                <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+                <script src="~/js/compras-dashboard.js" asp-append-version="true"></script>
+            }
+        </div>
+    </div>
+</body>
+</html>

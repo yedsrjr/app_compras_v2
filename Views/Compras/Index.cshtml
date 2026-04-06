@@ -1,5 +1,6 @@
 ﻿@model AppCompras.Models.ViewModels.ComprasViewModel
 @using AppCompras.Models.Data
+@using System.Text.Json
 @{
     ViewData["Title"] = "Consulta de Compras";
     Layout = null;
@@ -122,14 +123,10 @@
                 </form>
             </div>
 
-            @{
-                var isBuyer = ViewBag.UserRole?.ToString() == UserRole.Comprador.ToString();
-            }
-
-            @if (Model.MenorValorItems.Count > 0 || Model.UltimaCompraItems.Count > 0)
+            @if (Model.MenorValorItems.Count > 0)
             {
                 <div class="results-info">
-                    <p class="subtitle-info">Total de itens encontrados: @(Model.MenorValorItems.Count + Model.UltimaCompraItems.Count)</p>
+                    <p class="subtitle-info">Total de itens encontrados: @Model.MenorValorItems.Count</p>
                 </div>
 
                 <!-- Tabs Navigation -->
@@ -137,8 +134,8 @@
                     <button class="tab-button active" onclick="showTab('menor-valor')">
                         📊 Menor valor
                     </button>
-                    <button class="tab-button" onclick="showTab('ultima-compra')">
-                        🕒 Última Compra
+                    <button class="tab-button" onclick="showTab('dashboard')">
+                        📈 Dashboard
                     </button>
                 </div>
 
@@ -175,71 +172,117 @@
                     </div>
                 </div>
 
-                <!-- Tab 2: Última Compra -->
-                <div id="tab-ultima-compra" class="tab-content">
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Cód.</th>
-                                    <th>Descrição</th>
-                                    <th>Cód. PC</th>
-                                    <th>Fornecedor</th>
-                                    <th>Quantidade</th>
-                                    <th>Preço Unitário</th>
-                                    <th>Data</th>
-                                    <th>Média Ponderada</th>
-                                    <th>Status (RF05)</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @{
-                                    string? lastItemKey = null;
-                                }
-                                @foreach (var item in Model.UltimaCompraItems)
-                                {
-                                    var currentKey = item.Description ?? string.Empty;
-                                    var showMedia = currentKey != lastItemKey;
-                                    <tr>
-                                        <td>@item.Id</td>
-                                        <td class="description">@item.Description</td>
-                                        <td>@(item.UvCodPc?.ToString() ?? "-")</td>
-                                        <td class="supplier">@(item.UvFornecedor ?? "-")</td>
-                                        <td class="text-right">@(item.UvQuantidade?.ToString("N2") ?? "-")</td>
-                                        <td class="text-right price">@(item.UvPreco?.ToString("C2") ?? "-")</td>
-                                        <td class="text-center">@(item.UvData?.ToString("dd/MM/yyyy") ?? "-")</td>
-                                        <td class="text-right price-highlight">
-                                            @(showMedia ? (item.MediaPonderada?.ToString("C2") ?? "-") : "-")
-                                        </td>
-                                        <td class="text-center">
-                                            @{
-                                                var isOldUv = item.UvData.HasValue && (DateTime.Now - item.UvData.Value).TotalDays > 180;
-                                            }
-                                            @if (isOldUv && isBuyer)
-                                            {
-                                                <span class="status-locked" title="Bloqueado para alteração (180 dias)">🔒 Bloqueado</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="status-ok">🔓 Liberado</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            <form asp-action="SalvarAlteracao" method="post">
-                                                <input type="hidden" name="id" value="@item.Id" />
-                                                <input type="hidden" name="dataRegistro" value="@(item.UvData?.ToString("yyyy-MM-dd") ?? "")" />
-                                                <button type="submit" class="btn-action-save" @(isOldUv && isBuyer ? "disabled" : "")>
-                                                    💾 Salvar
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    lastItemKey = currentKey;
-                                }
-                            </tbody>
-                        </table>
+                <!-- Tab 2: Dashboard -->
+                <div id="tab-dashboard" class="tab-content">
+                    @{
+                        var requiresItem = !string.Equals(ViewBag.TipoBusca as string, "item", StringComparison.OrdinalIgnoreCase);
+                        var itemOptions = ViewBag.DashboardItemOptions as List<AppCompras.Models.ViewModels.ItemOptionViewModel>
+                            ?? new List<AppCompras.Models.ViewModels.ItemOptionViewModel>();
+                    }
+
+                    <div class="dashboard-filters">
+                        <label for="dashboardItemFilter">Item</label>
+                        <select id="dashboardItemFilter" class="search-select">
+                            <option value="">Selecione um item...</option>
+                            @foreach (var item in itemOptions)
+                            {
+                                <option value="@item.Code" selected="@(requiresItem ? false : item.Code == (ViewBag.ValorBusca as string))">
+                                    @item.Code — @item.Name
+                                </option>
+                            }
+                        </select>
                     </div>
+
+                    @if (requiresItem)
+                    {
+                        <div id="dashboardSelectHint" class="alert alert-error">
+                            Selecione um item para carregar o dashboard completo.
+                        </div>
+                    }
+
+                    <section id="analysisPanel" class="analysis-panel @(requiresItem ? "hidden" : "")">
+                        <div class="analysis-header">
+                            <div class="analysis-title">
+                                <div class="analysis-item" id="analysisItemTitle">Item</div>
+                                <div class="analysis-sub" id="analysisSubTitle">Fornecedor · Período</div>
+                            </div>
+                            <span class="analysis-badge" id="analysisCount">0 itens</span>
+                        </div>
+
+                        <div class="analysis-body">
+                            <div class="metric-grid">
+                                <div class="metric-card">
+                                    <div class="metric-label">PREÇO MÉDIO</div>
+                                    <div class="metric-value" id="metricAvg">R$ 0,00</div>
+                                    <div class="metric-sub" id="metricAvgUnit">por unidade</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">MENOR PREÇO</div>
+                                    <div class="metric-value metric-green" id="metricMin">R$ 0,00</div>
+                                    <div class="metric-sub" id="metricMinMeta">-</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">MAIOR PREÇO</div>
+                                    <div class="metric-value metric-red" id="metricMax">R$ 0,00</div>
+                                    <div class="metric-sub" id="metricMaxMeta">-</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">VARIAÇÃO</div>
+                                    <div class="metric-value" id="metricVar">0,0%</div>
+                                    <div class="metric-sub metric-red" id="metricVarMeta">mín → máx</div>
+                                </div>
+                            </div>
+
+                            <div class="analysis-charts">
+                                <div class="chart-card">
+                                    <div class="chart-title">Evolução do preço unitário por compra</div>
+                                    <div class="chart-canvas">
+                                        <canvas id="lineChart"></canvas>
+                                    </div>
+                                    <div class="chart-legend" id="lineLegend"></div>
+                                </div>
+
+                                <div class="chart-card">
+                                    <div class="chart-title">Média por fornecedor</div>
+                                    <div class="chart-canvas">
+                                        <canvas id="supplierBarChart"></canvas>
+                                    </div>
+                                    <div class="chart-legend" id="supplierLegend"></div>
+                                </div>
+                            </div>
+
+                            <div class="analysis-table">
+                                <div class="chart-title">Comparativo por pedido de compra</div>
+                                <div class="table-scroll">
+                                    <table class="table-mini">
+                                        <thead>
+                                            <tr>
+                                                <th>Cód. PC</th>
+                                                <th>Data</th>
+                                                <th>Fornecedor</th>
+                                                <th>Qtd.</th>
+                                                <th>Preço Unit.</th>
+                                                <th>vs. Média</th>
+                                                <th>Valor Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="analysisTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <script>
+                        window.menorValorData = @Html.Raw(JsonSerializer.Serialize(Model.MenorValorItems));
+                        window.analysisFilters = {
+                            dataInicio: "@(ViewBag.DataInicio ?? "")",
+                            dataFim: "@(ViewBag.DataFim ?? "")"
+                        };
+                        window.dashboardRequiresItem = @(requiresItem.ToString().ToLower());
+                    </script>
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+                    <script src="~/js/compras-dashboard.js" asp-append-version="true"></script>
                 </div>
             }
             else if (ViewBag.ValorBusca != null)
@@ -274,6 +317,20 @@
             document.getElementById('tab-' + tabName).classList.add('active');
             event.target.classList.add('active');
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get('tab');
+            if (tab && document.getElementById('tab-' + tab)) {
+                const targetBtn = Array.from(document.querySelectorAll('.tab-button'))
+                    .find(b => b.getAttribute('onclick')?.includes(`showTab('${tab}')`));
+                if (targetBtn) {
+                    targetBtn.click();
+                } else {
+                    showTab(tab);
+                }
+            }
+        });
     </script>
 </body>
 </html>
