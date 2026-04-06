@@ -11,6 +11,9 @@ obj/
 # Database files
 Db.db
 
+# Secrets
+appsettings.json
+
 # OS files
 Thumbs.db
 Desktop.ini
