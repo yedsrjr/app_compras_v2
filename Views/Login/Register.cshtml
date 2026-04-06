@@ -1,0 +1,76 @@
+﻿@model AppCompras.Models.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Cadastro - Fazenda Santa Fé";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/png" href="~/img/icone-logo-40-anos.png" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/register.css" />
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-header">
+            <img src="~/img/logo-40-anos.png" alt="Logo 40 anos Fazenda Santa Fé" class="logo-img-large" />
+            <h2 class="register-title">CRIAR NOVA CONTA</h2>
+        </div>
+        <div class="register-body">
+            <form asp-action="Register" asp-controller="Login" method="post">
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+                
+                <div class="form-group">
+                    <label for="Name">Nome Completo</label>
+                    <input type="text" id="Name" asp-for="Name" required />
+                    <span asp-validation-for="Name" class="validation-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="Username">Nome de Usuário</label>
+                    <input type="text" id="Username" asp-for="Username" required />
+                    <span asp-validation-for="Username" class="validation-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="Email">Email</label>
+                    <input type="text" id="Email" asp-for="Email" required />
+                    <span asp-validation-for="Email" class="validation-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="Password">Senha</label>
+                    <input type="password" id="Password" asp-for="Password" required />
+                    <span asp-validation-for="Password" class="validation-message"></span>
+                    <div class="password-hint">Mínimo 6 caracteres, pode conter letras e números</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ConfirmPassword">Confirmar Senha</label>
+                    <input type="password" id="ConfirmPassword" asp-for="ConfirmPassword" required />
+                    <span asp-validation-for="ConfirmPassword" class="validation-message"></span>
+                </div>
+
+                <button type="submit" class="btn-register">CRIAR CONTA</button>
+
+                <div class="login-section">
+                    <p>Já possui uma conta?</p>
+                    <a asp-action="Index" asp-controller="Login" class="btn-back-login">FAZER LOGIN</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @section Scripts {
+        <partial name="_ValidationScriptsPartial" />
+    }
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+<script src="~/js/register.js"></script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+﻿@model AppCompras.Models.ViewModels.ComprasViewModel
+@using AppCompras.Models.Data
+@{
+    ViewData["Title"] = "Consulta de Compras";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/png" href="~/img/icone-logo-40-anos.png" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/compras.css" />
+</head>
+<body>
+    <header class="page-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="~/img/icone-logo-40-anos.png" alt="Logo 40 anos Fazenda Santa Fé" class="logo-img-small" />
+                <div class="header-text">
+                    <span class="subtitle">Sistema de Compras</span>
+                </div>
+            </div>
+            <div class="user-section">
+                <div class="user-info">
+                    <span class="welcome">Bem-vindo, @ViewBag.Username</span>
+                    @if (ViewBag.UserRole != null)
+                    {
+                        <span class="role-badge">@ViewBag.UserRole</span>
+                    }
+                </div>
+                <form asp-action="Logout" asp-controller="Login" method="post" style="display: inline;">
+                    <button type="submit" class="btn-logout">Sair</button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="content-wrapper">
+            <div class="page-title">
+                <h2>Consulta de Itens de Compra</h2>
+            </div>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-error">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+
+            <!-- Formulário de Busca -->
+            <div class="search-container">
+                <form asp-action="Buscar" asp-controller="Compras" method="get" class="search-form">
+                    <div class="search-row">
+                        <div class="form-group-search">
+                            <label for="tipoBusca">Tipo de Busca</label>
+                            <select id="tipoBusca" name="tipoBusca" class="search-select" required>
+                                <option value="">Selecione...</option>
+                                <option value="pedido" selected="@(ViewBag.TipoBusca == "pedido" ? "selected" : null)">
+                                    Código de Pedido de Compra
+                                </option>
+                                <option value="item" selected="@(ViewBag.TipoBusca == "item" ? "selected" : null)">
+                                    Código de Item
+                                </option>
+                                <option value="descricao" selected="@(ViewBag.TipoBusca == "descricao" ? "selected" : null)">
+                                    Descrição do Item
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group-search">
+                            <label for="valorBusca">Valor</label>
+                            <input 
+                                type="text" 
+                                id="valorBusca" 
+                                name="valorBusca" 
+                                class="search-input" 
+                                placeholder="Digite o código..."
+                                value="@ViewBag.ValorBusca"
+                                required />
+                        </div>
+
+                        <div class="form-group-search">
+                            <label for="dataInicio">Data Inicial</label>
+                            <input
+                                type="date"
+                                id="dataInicio"
+                                name="dataInicio"
+                                class="search-input"
+                                value="@ViewBag.DataInicio" />
+                        </div>
+
+                        <div class="form-group-search">
+                            <label for="dataFim">Data Final</label>
+                            <input
+                                type="date"
+                                id="dataFim"
+                                name="dataFim"
+                                class="search-input"
+                                value="@ViewBag.DataFim" />
+                        </div>
+
+                        <div class="form-group-search button-group">
+                            <button type="submit" class="btn-search">
+                                🔍 Buscar
+                            </button>
+                            <a asp-action="Index" class="btn-clear">
+                                🔄 Limpar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            @{
+                var isBuyer = ViewBag.UserRole?.ToString() == UserRole.Comprador.ToString();
+            }
+
+            @if (Model.MenorValorItems.Count > 0 || Model.UltimaCompraItems.Count > 0)
+            {
+                <div class="results-info">
+                    <p class="subtitle-info">Total de itens encontrados: @(Model.MenorValorItems.Count + Model.UltimaCompraItems.Count)</p>
+                </div>
+
+                <!-- Tabs Navigation -->
+                <div class="tabs-container">
+                    <button class="tab-button active" onclick="showTab('menor-valor')">
+                        📊 Menor valor
+                    </button>
+                    <button class="tab-button" onclick="showTab('ultima-compra')">
+                        🕒 Última Compra
+                    </button>
+                </div>
+
+                <!-- Tab 1: Menor Valor -->
+                <div id="tab-menor-valor" class="tab-content active">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Cód. PC</th>
+                                    <th>Descrição</th>
+                                    <th>Fornecedor</th>
+                                    <th>Data</th>
+                                    <th>Quantidade</th>
+                                    <th>Preço Unitário</th>
+                                    <th>Valor Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.MenorValorItems)
+                                {
+                                    <tr>
+                                        <td>@item.CodPc</td>
+                                        <td class="description">@item.Description</td>
+                                        <td class="supplier">@(item.Fornecedor ?? "-")</td>
+                                        <td class="text-center">@(item.DataPc?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td class="text-right">@(item.Quantidade?.ToString("N2") ?? "-")</td>
+                                        <td class="text-right price">@(item.PrecoUnitario?.ToString("C2") ?? "-")</td>
+                                        <td class="text-right price-highlight">@(item.ValorTotalItem?.ToString("C2") ?? "-")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Última Compra -->
+                <div id="tab-ultima-compra" class="tab-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Cód.</th>
+                                    <th>Descrição</th>
+                                    <th>Cód. PC</th>
+                                    <th>Fornecedor</th>
+                                    <th>Quantidade</th>
+                                    <th>Preço Unitário</th>
+                                    <th>Data</th>
+                                    <th>Média Ponderada</th>
+                                    <th>Status (RF05)</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    string? lastItemKey = null;
+                                }
+                                @foreach (var item in Model.UltimaCompraItems)
+                                {
+                                    var currentKey = item.Description ?? string.Empty;
+                                    var showMedia = currentKey != lastItemKey;
+                                    <tr>
+                                        <td>@item.Id</td>
+                                        <td class="description">@item.Description</td>
+                                        <td>@(item.UvCodPc?.ToString() ?? "-")</td>
+                                        <td class="supplier">@(item.UvFornecedor ?? "-")</td>
+                                        <td class="text-right">@(item.UvQuantidade?.ToString("N2") ?? "-")</td>
+                                        <td class="text-right price">@(item.UvPreco?.ToString("C2") ?? "-")</td>
+                                        <td class="text-center">@(item.UvData?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td class="text-right price-highlight">
+                                            @(showMedia ? (item.MediaPonderada?.ToString("C2") ?? "-") : "-")
+                                        </td>
+                                        <td class="text-center">
+                                            @{
+                                                var isOldUv = item.UvData.HasValue && (DateTime.Now - item.UvData.Value).TotalDays > 180;
+                                            }
+                                            @if (isOldUv && isBuyer)
+                                            {
+                                                <span class="status-locked" title="Bloqueado para alteração (180 dias)">🔒 Bloqueado</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-ok">🔓 Liberado</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <form asp-action="SalvarAlteracao" method="post">
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <input type="hidden" name="dataRegistro" value="@(item.UvData?.ToString("yyyy-MM-dd") ?? "")" />
+                                                <button type="submit" class="btn-action-save" @(isOldUv && isBuyer ? "disabled" : "")>
+                                                    💾 Salvar
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    lastItemKey = currentKey;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            else if (ViewBag.ValorBusca != null)
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <h3>Nenhum resultado encontrado</h3>
+                    <p>Tente buscar com outros parâmetros</p>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <h3>Realize uma busca</h3>
+                    <p>Selecione o tipo de busca e informe o código para consultar</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,63 @@
+﻿@model AppCompras.Models.ViewModels.UserViewModel;
+@{
+    ViewData["Title"] = "Login - Fazenda Santa Fé";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/png" href="~/img/icone-logo-40-anos.png" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/login.css" />
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <img src="~/img/logo-40-anos.png" alt="Logo 40 anos Fazenda Santa Fé" class="logo-img-large" />
+        </div>
+
+        <div class="login-body">
+            <form asp-action="Login" asp-controller="Login" method="post">
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+                <div class="form-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" asp-for="Username" required />
+                    <span asp-validation-for="Username" class="validation-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" asp-for="Password" required />
+                    <span asp-validation-for="Password" class="validation-message"></span>
+                </div>
+
+                <div class="remember-forgot">
+                    <label class="remember-me">
+                        <input type="checkbox" name="rememberMe" />
+                        <span>Lembrar-me</span>
+                    </label>
+                    <a href="#" class="forgot-password">Esqueceu a senha?</a>
+                </div>
+
+                <button type="submit" class="btn-login">ENTRAR</button>
+
+                <div class="register-section">
+                    <p>Não possui uma conta?</p>
+                    <a asp-action="Register" asp-controller="Login" class="btn-register">CRIAR CONTA</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    @section Scripts {
+        @{
+            await Html.RenderPartialAsync("_ValidationScriptsPartial");
+        }
+    }
+</body>
+</html>
