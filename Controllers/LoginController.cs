@@ -34,6 +34,56 @@ namespace AppCompras.Controllers
         }
 
         [HttpGet]
+        public IActionResult ChangePassword()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (!userId.HasValue)
+            {
+                TempData["ErrorMessage"] = "Faça login para alterar sua senha.";
+                return RedirectToAction("Index", "Login");
+            }
+
+            ViewBag.Username = HttpContext.Session.GetString("Name");
+            ViewBag.UserRole = HttpContext.Session.GetString("UserRole");
+            return View(new ChangePasswordViewModel());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (!userId.HasValue)
+            {
+                TempData["ErrorMessage"] = "Faça login para alterar sua senha.";
+                return RedirectToAction("Index", "Login");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Username = HttpContext.Session.GetString("Name");
+                ViewBag.UserRole = HttpContext.Session.GetString("UserRole");
+                return View(model);
+            }
+
+            var result = await user_context.ChangePassword(
+                userId.Value,
+                model.CurrentPassword,
+                model.NewPassword,
+                model.ConfirmPassword);
+
+            if (!result.Success)
+            {
+                ModelState.AddModelError("", result.Message);
+                ViewBag.Username = HttpContext.Session.GetString("Name");
+                ViewBag.UserRole = HttpContext.Session.GetString("UserRole");
+                return View(model);
+            }
+
+            TempData["SuccessMessage"] = result.Message;
+            return RedirectToAction("Index", "Compras");
+        }
+
+        [HttpGet]
         public IActionResult Register()
         {
             return View();

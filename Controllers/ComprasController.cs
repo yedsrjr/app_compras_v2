@@ -200,8 +200,7 @@ namespace AppCompras.Controllers
             
             TempData["SuccessMessage"] = $"Alteração no item {id} autorizada e processada com sucesso.";
             
-            // Opcional: injetar LogService aqui para gravar a edição ou delegar ao SAPServices
-            // await _logService.RecordLog(userId, username, "Edição de Registro", $"Item: {id}");
+            // Registro de auditoria removido (logs desativados no projeto)
 
             return RedirectToAction("Index");
         }

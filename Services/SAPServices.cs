@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace AppCompras.Services
 {
-    public class SAPServices(SAPRepository services, LogService logService)
+    public class SAPServices(SAPRepository services)
     {
         public async Task<ServiceResult<List<ItemCompraViewModel>>> BuscarPorPedidoCompra(
             string codPedido,
@@ -16,7 +16,6 @@ namespace AppCompras.Services
             if (!int.TryParse(codPedido, out _))
                 return ServiceResult<List<ItemCompraViewModel>>.Fail("O código do pedido deve ser numérico");
 
-            await logService.RecordLog(userId, username, "Consulta por Pedido de Compra", $"DocNum: {codPedido}");
             return await ExecutarBusca(GetBaseQuery(dataInicio, dataFim) + $" WHERE o.DocNum = {codPedido} ORDER BY p.LineNum ASC");
         }
 
@@ -30,7 +29,6 @@ namespace AppCompras.Services
             // Sanitização básica para evitar injeção de SQL em strings
             var sanitizedItem = codigoItem.Replace("'", "''");
 
-            await logService.RecordLog(userId, username, "Consulta por Item", $"ItemCode: {sanitizedItem}");
             return await ExecutarBusca(GetBaseQuery(dataInicio, dataFim) + $" WHERE p.ItemCode = '{sanitizedItem}' ORDER BY p.LineNum ASC");
         }
 
@@ -44,7 +42,6 @@ namespace AppCompras.Services
             // Sanitização para evitar injeção de SQL
             var sanitizedDesc = descricao.Replace("'", "''");
 
-            await logService.RecordLog(userId, username, "Consulta por Descrição", $"Termo: {sanitizedDesc}");
             // Utiliza LIKE para busca flexível por descrição
             return await ExecutarBusca(GetBaseQuery(dataInicio, dataFim) + $" WHERE p.Dscription LIKE '%{sanitizedDesc}%' ORDER BY p.LineNum ASC");
         }
@@ -87,8 +84,6 @@ namespace AppCompras.Services
                 return ServiceResult<List<MenorValorViewModel>>
                     .Fail("Tipo de busca inválido.");
             }
-
-            await logService.RecordLog(userId, username, "Consulta Menor Valor", logText);
 
             var query = $@"
                 SELECT

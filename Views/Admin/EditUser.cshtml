@@ -11,23 +11,30 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
-    <link rel="icon" type="image/png" href="~/img/logo-40-anos.png" asp-append-version="true" />
+    <link rel="icon" type="image/png" href="~/img/icone-logo-40-anos.png" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/admin-user-form.css" />
 </head>
 <body>
-    <div class="page-shell">
-        <div class="topbar">
-            <div class="topbar-logo">
-                <img src="~/img/logo-40-anos.png" alt="Logo 40 anos Fazenda Santa Fé" />
+    <header class="page-header">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="~/img/icone-logo-40-anos.png" alt="Logo 40 anos Fazenda Santa Fé" class="logo-img-small" />
+                <div class="header-text">
+                    <span class="subtitle">Administração de usuários</span>
+                </div>
             </div>
-            <span class="topbar-title">Administração de usuários</span>
-            <div class="topbar-right">
-                <span class="topbar-admin">Admin: <span>@ViewBag.Username</span></span>
-                <a asp-action="Users" asp-controller="Admin" class="topbar-btn">Usuários</a>
-                <a asp-action="Index" asp-controller="Compras" class="topbar-btn">Voltar</a>
+            <div class="user-section">
+                <div class="user-info">
+                    <span class="welcome">Admin: <span>@ViewBag.Username</span></span>
+                </div>
+                <a asp-action="ChangePassword" asp-controller="Login" class="header-btn">Trocar senha</a>
+                <a asp-action="Users" asp-controller="Admin" class="header-btn">Usuários</a>
+                <a asp-action="Index" asp-controller="Compras" class="header-btn">Voltar</a>
             </div>
         </div>
+    </header>
 
+    <div class="page-shell">
         <div class="content">
             <div class="breadcrumb">
                 <a asp-action="Users" asp-controller="Admin">Usuários</a>

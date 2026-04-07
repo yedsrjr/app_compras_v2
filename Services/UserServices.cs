@@ -91,5 +91,39 @@ namespace AppCompras.Services
 
             return ServiceResult<RegisterViewModel>.Ok(model, "Usuário cadastrado com sucesso");
         }
+
+        public async Task<ServiceResult<bool>> ChangePassword(int userId, string currentPassword, string newPassword, string confirmPassword)
+        {
+            if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword))
+            {
+                return ServiceResult<bool>.Fail("Preencha todos os campos obrigatórios");
+            }
+
+            if (newPassword.Length < 6)
+            {
+                return ServiceResult<bool>.Fail("A nova senha deve ter no mínimo 6 caracteres");
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                return ServiceResult<bool>.Fail("As senhas não coincidem");
+            }
+
+            var user = await context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return ServiceResult<bool>.Fail("Usuário não encontrado");
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.Password))
+            {
+                return ServiceResult<bool>.Fail("Senha atual inválida");
+            }
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Ok(true, "Senha atualizada com sucesso");
+        }
     }
 }

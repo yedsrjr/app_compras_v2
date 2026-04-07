@@ -19,7 +19,6 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>();
 builder.Services.AddHttpClient<SAPRepository>();
 builder.Services.AddScoped<UserServices>();
-builder.Services.AddScoped<LogService>();
 builder.Services.AddScoped<SAPServices>();
 
 

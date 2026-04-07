@@ -2,7 +2,6 @@
 using AppCompras.Models;
 using AppCompras.Models.Data;
 using AppCompras.Models.ViewModels;
-using AppCompras.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -10,25 +9,12 @@ using System.Threading.Tasks;
 
 namespace AppCompras.Controllers
 {
-    public class AdminController(LogService logService, AppDbContext context) : Controller
+    public class AdminController(AppDbContext context) : Controller
     {
         private bool IsAdmin()
         {
             var userRole = HttpContext.Session.GetString("UserRole");
             return userRole == UserRole.Administrador.ToString();
-        }
-
-        public async Task<IActionResult> AuditLogs()
-        {
-            if (!IsAdmin())
-            {
-                TempData["ErrorMessage"] = "Acesso negado. Apenas administradores podem ver os logs.";
-                return RedirectToAction("Index", "Compras");
-            }
-
-            var logs = await logService.GetLogs();
-            ViewBag.Username = HttpContext.Session.GetString("Name");
-            return View(logs);
         }
 
         [HttpGet]
