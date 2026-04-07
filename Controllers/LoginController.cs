@@ -84,6 +84,36 @@ namespace AppCompras.Controllers
         }
 
         [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View(new ForgotPasswordViewModel());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var result = await user_context.ResetPasswordByLogin(
+                model.Username,
+                model.Email,
+                model.NewPassword,
+                model.ConfirmPassword);
+
+            if (!result.Success)
+            {
+                ModelState.AddModelError("", result.Message);
+                return View(model);
+            }
+
+            TempData["SuccessMessage"] = result.Message;
+            return RedirectToAction("Index", "Login");
+        }
+
+        [HttpGet]
         public IActionResult Register()
         {
             return View();

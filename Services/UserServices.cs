@@ -125,5 +125,39 @@ namespace AppCompras.Services
 
             return ServiceResult<bool>.Ok(true, "Senha atualizada com sucesso");
         }
+
+        public async Task<ServiceResult<bool>> ResetPasswordByLogin(string username, string email, string newPassword, string confirmPassword)
+        {
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email))
+            {
+                return ServiceResult<bool>.Fail("Usuário e e-mail são obrigatórios");
+            }
+
+            if (string.IsNullOrWhiteSpace(newPassword))
+            {
+                return ServiceResult<bool>.Fail("A nova senha é obrigatória");
+            }
+
+            if (newPassword.Length < 6)
+            {
+                return ServiceResult<bool>.Fail("A nova senha deve ter no mínimo 6 caracteres");
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                return ServiceResult<bool>.Fail("As senhas não coincidem");
+            }
+
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Username == username && u.Email == email);
+            if (user == null)
+            {
+                return ServiceResult<bool>.Fail("Usuário ou e-mail inválidos");
+            }
+
+            user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Ok(true, "Senha redefinida com sucesso");
+        }
     }
 }
