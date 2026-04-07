@@ -92,6 +92,55 @@
 
   let lineChartInstance = null;
   let supplierChartInstance = null;
+  let dashboardCurrentPage = 1;
+
+  const dashboardPageSizeSelect = document.getElementById('dashboardPageSizeSelect');
+  const dashboardPrevPage = document.getElementById('dashboardPrevPage');
+  const dashboardNextPage = document.getElementById('dashboardNextPage');
+  const dashboardPageInfo = document.getElementById('dashboardPageInfo');
+
+  const getDashboardPageSize = () => parseInt(dashboardPageSizeSelect?.value || '10', 10);
+
+  const renderDashboardPagination = (rows) => {
+    if (!dashboardPageInfo || !dashboardPrevPage || !dashboardNextPage) return;
+    const pageSize = getDashboardPageSize();
+    const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+    dashboardCurrentPage = Math.min(dashboardCurrentPage, totalPages);
+
+    rows.forEach((row, index) => {
+      const start = (dashboardCurrentPage - 1) * pageSize;
+      const end = start + pageSize;
+      row.style.display = index >= start && index < end ? '' : 'none';
+    });
+
+    dashboardPageInfo.textContent = `Página ${dashboardCurrentPage} de ${totalPages}`;
+    dashboardPrevPage.disabled = dashboardCurrentPage <= 1;
+    dashboardNextPage.disabled = dashboardCurrentPage >= totalPages;
+  };
+
+  if (dashboardPageSizeSelect) {
+    dashboardPageSizeSelect.addEventListener('change', () => {
+      dashboardCurrentPage = 1;
+      const rows = Array.from(document.querySelectorAll('#analysisTableBody tr'));
+      renderDashboardPagination(rows);
+    });
+  }
+
+  if (dashboardPrevPage) {
+    dashboardPrevPage.addEventListener('click', () => {
+      dashboardCurrentPage = Math.max(1, dashboardCurrentPage - 1);
+      const rows = Array.from(document.querySelectorAll('#analysisTableBody tr'));
+      renderDashboardPagination(rows);
+    });
+  }
+
+  if (dashboardNextPage) {
+    dashboardNextPage.addEventListener('click', () => {
+      dashboardCurrentPage = dashboardCurrentPage + 1;
+      const rows = Array.from(document.querySelectorAll('#analysisTableBody tr'));
+      renderDashboardPagination(rows);
+    });
+  }
 
   const periodText = (filters.dataInicio || filters.dataFim)
     ? `${filters.dataInicio || '...'} → ${filters.dataFim || '...'}`
@@ -281,7 +330,7 @@
               grid: { color: 'rgba(128,128,128,0.1)' }
             },
             x: {
-              ticks: { font: { size: 10 } },
+              ticks: { display: false },
               grid: { display: false }
             }
           }
@@ -318,6 +367,8 @@
         `;
         tbody.appendChild(tr);
       });
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      renderDashboardPagination(rows);
     }
   };
 

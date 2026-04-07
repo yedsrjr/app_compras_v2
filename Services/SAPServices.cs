@@ -56,10 +56,10 @@ namespace AppCompras.Services
         {
             var diasDiferenca = (DateTime.Now - dataSolicitacao).TotalDays;
 
-            // Se passou de 180 dias e não for Gerente ou Admin, bloqueia
+            // Se passou de 180 dias e não for Admin, bloqueia
             if (diasDiferenca > 180 && userRole == UserRole.Comprador)
             {
-                return ServiceResult<bool>.Fail("Alterações em solicitações com mais de 180 dias exigem autorização de um Gerente.");
+                return ServiceResult<bool>.Fail("Alterações em solicitações com mais de 180 dias exigem autorização de um Administrador.");
             }
 
             return ServiceResult<bool>.Ok(true);

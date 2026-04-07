@@ -129,6 +129,17 @@
 
                         <div class="analysis-table">
                             <div class="chart-title">Comparativo por pedido de compra</div>
+                            <div class="table-controls">
+                                <div class="page-size">
+                                    <label for="dashboardPageSizeSelect">Itens por página (Nº de itens)</label>
+                                    <select id="dashboardPageSizeSelect" class="search-select">
+                                        <option value="10" selected>10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                            </div>
                             <div class="table-scroll">
                                 <table class="table-mini">
                                     <thead>
@@ -144,6 +155,11 @@
                                     </thead>
                                     <tbody id="analysisTableBody"></tbody>
                                 </table>
+                            </div>
+                            <div class="pager footer">
+                                <button type="button" id="dashboardPrevPage" class="btn-clear">Anterior</button>
+                                <span id="dashboardPageInfo" class="pager-info">Página 1 de 1</span>
+                                <button type="button" id="dashboardNextPage" class="btn-search">Próxima</button>
                             </div>
                         </div>
                     </div>

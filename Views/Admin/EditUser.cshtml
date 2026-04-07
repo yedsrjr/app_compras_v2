@@ -1,0 +1,227 @@
+﻿@model AppCompras.Models.ViewModels.AdminEditUserViewModel
+@using AppCompras.Models.Data
+@{
+    ViewData["Title"] = "Editar usuário";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/png" href="~/img/logo-40-anos.png" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-user-form.css" />
+</head>
+<body>
+    <div class="page-shell">
+        <div class="topbar">
+            <div class="topbar-logo">
+                <img src="~/img/logo-40-anos.png" alt="Logo 40 anos Fazenda Santa Fé" />
+            </div>
+            <span class="topbar-title">Administração de usuários</span>
+            <div class="topbar-right">
+                <span class="topbar-admin">Admin: <span>@ViewBag.Username</span></span>
+                <a asp-action="Users" asp-controller="Admin" class="topbar-btn">Usuários</a>
+                <a asp-action="Index" asp-controller="Compras" class="topbar-btn">Voltar</a>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="breadcrumb">
+                <a asp-action="Users" asp-controller="Admin">Usuários</a>
+                <span class="breadcrumb-sep">›</span>
+                <span>Editar usuário</span>
+            </div>
+            <div class="page-title">Editar usuário</div>
+
+            <form asp-action="EditUser" method="post">
+                <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+                <input type="hidden" asp-for="Id" />
+
+                <div class="layout">
+                    <div class="stack">
+                        <div class="card">
+                            <div class="card-title">Dados pessoais</div>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label>Nome completo <span class="req">*</span></label>
+                                    <input asp-for="Name" id="inp-nome" type="text" placeholder="Ex: João da Silva" oninput="updatePreview()" />
+                                    <span asp-validation-for="Name" class="validation-message"></span>
+                                </div>
+                                <div class="field">
+                                    <label>Usuário (login) <span class="req">*</span></label>
+                                    <input asp-for="Username" id="inp-login" type="text" placeholder="Ex: joao.silva" oninput="updatePreview()" />
+                                    <span class="hint">Somente letras minúsculas, números e ponto</span>
+                                    <span asp-validation-for="Username" class="validation-message"></span>
+                                </div>
+                                <div class="field span2">
+                                    <label>E-mail <span class="req">*</span></label>
+                                    <input asp-for="Email" type="email" placeholder="Ex: joao@confinamentosantafe.com.br" />
+                                    <span asp-validation-for="Email" class="validation-message"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">Segurança</div>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label>Nova senha (opcional)</label>
+                                    <div class="password-wrap">
+                                        <input asp-for="NewPassword" id="inp-senha" type="password" placeholder="Mínimo 8 caracteres" oninput="checkStrength()" />
+                                        <button type="button" class="eye-btn" onclick="togglePass('inp-senha')">👁</button>
+                                    </div>
+                                    <div class="strength-bar">
+                                        <div class="strength-seg" id="s1"></div>
+                                        <div class="strength-seg" id="s2"></div>
+                                        <div class="strength-seg" id="s3"></div>
+                                        <div class="strength-seg" id="s4"></div>
+                                    </div>
+                                    <span class="strength-label hint" id="strength-label">Digite uma senha</span>
+                                    <span asp-validation-for="NewPassword" class="validation-message"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">Perfil de acesso e status</div>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label>Perfil de acesso <span class="req">*</span></label>
+                                    <select asp-for="Role" id="roleSelect">
+                                        <option value="Comprador">Comprador</option>
+                                        <option value="Administrador">Administrador</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label>Status do usuário <span class="req">*</span></label>
+                                    <select asp-for="Status" id="statusSelect">
+                                        <option value="Ativo">Ativo</option>
+                                        <option value="Inativo">Inativo</option>
+                                        <option value="Bloqueado">Bloqueado</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stack">
+                        <div class="card">
+                            <div class="card-title">Pré-visualização</div>
+                            <div class="avatar-preview">
+                                <div class="avatar-big" id="prev-avatar">?</div>
+                                <div class="preview-block">
+                                    <div class="avatar-name" id="prev-nome">Nome do usuário</div>
+                                    <div class="avatar-role" id="prev-perfil">Administrador</div>
+                                    <div class="avatar-login" id="prev-login">@@usuario</div>
+                                </div>
+                            </div>
+                            <div class="preview-details">
+                                <div class="preview-row">
+                                    <span>Perfil</span>
+                                    <span id="prev-badge" class="badge-chip admin">Administrador</span>
+                                </div>
+                                <div class="preview-row">
+                                    <span>Status</span>
+                                    <span id="prev-status" class="status-active">● Ativo</span>
+                                </div>
+                                <div class="preview-row">
+                                    <span>Criado em</span>
+                                    <span class="muted" id="prev-data"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card warn-card">
+                            <div class="warn-title">Atenção</div>
+                            <div class="warn-text">
+                                Administradores têm acesso irrestrito ao sistema, incluindo exclusão de dados e gerenciamento de usuários.
+                                Conceda este perfil com cautela.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-actions">
+                    <a asp-action="Users" asp-controller="Admin" class="btn-cancel">Cancelar</a>
+                    <button type="submit" class="btn-save">Salvar alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        const roleSelect = document.getElementById('roleSelect');
+        const statusSelect = document.getElementById('statusSelect');
+        const prevPerfil = document.getElementById('prev-perfil');
+        const prevBadge = document.getElementById('prev-badge');
+        const prevStatus = document.getElementById('prev-status');
+        const warnCard = document.querySelector('.warn-card');
+
+        function updatePreview() {
+            const nome = document.getElementById('inp-nome').value || 'Nome do usuário';
+            const login = document.getElementById('inp-login').value || 'usuario';
+            const initials = nome.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('') || '?';
+            document.getElementById('prev-avatar').textContent = initials;
+            document.getElementById('prev-nome').textContent = nome;
+            document.getElementById('prev-login').textContent = '@@' + login;
+        }
+
+        function checkStrength() {
+            const v = document.getElementById('inp-senha').value;
+            const segs = [document.getElementById('s1'), document.getElementById('s2'), document.getElementById('s3'), document.getElementById('s4')];
+            const lbl = document.getElementById('strength-label');
+            segs.forEach(s => { s.className = 'strength-seg'; });
+            if (!v) { lbl.textContent = 'Digite uma senha'; lbl.style.color = '#9aa4b2'; return; }
+            let score = 0;
+            if (v.length >= 8) score++;
+            if (/[A-Z]/.test(v)) score++;
+            if (/[0-9]/.test(v)) score++;
+            if (/[^A-Za-z0-9]/.test(v)) score++;
+            const cls = score <= 1 ? 'filled-weak' : score <= 2 ? 'filled-mid' : 'filled-strong';
+            for (let i = 0; i < score; i++) segs[i].classList.add(cls);
+            const labels = ['', 'Fraca', 'Razoável', 'Boa', 'Forte'];
+            const colors = ['', '#A32D2D', '#854F0B', '#3B6D11', '#085041'];
+            lbl.textContent = labels[score];
+            lbl.style.color = colors[score];
+        }
+
+        function togglePass(id) {
+            const inp = document.getElementById(id);
+            inp.type = inp.type === 'password' ? 'text' : 'password';
+        }
+
+        function updateRolePreview() {
+            const perfil = roleSelect.value;
+            prevPerfil.textContent = perfil;
+            if (perfil === 'Administrador') {
+                prevBadge.textContent = 'Administrador';
+                prevBadge.className = 'badge-chip admin';
+                warnCard.style.display = '';
+            } else {
+                prevBadge.textContent = 'Comprador';
+                prevBadge.className = 'badge-chip buyer';
+                warnCard.style.display = 'none';
+            }
+        }
+
+        function updateStatusPreview() {
+            const status = statusSelect.value;
+            const cls = status === 'Ativo' ? 'status-active' : status === 'Inativo' ? 'status-inactive' : 'status-blocked';
+            prevStatus.className = cls;
+            prevStatus.textContent = '● ' + status;
+        }
+
+        document.getElementById('prev-data').textContent = new Date().toLocaleDateString('pt-BR');
+        roleSelect.addEventListener('change', updateRolePreview);
+        statusSelect.addEventListener('change', updateStatusPreview);
+        updateRolePreview();
+        updateStatusPreview();
+        updatePreview();
+    </script>
+</body>
+</html>

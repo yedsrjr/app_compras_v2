@@ -24,18 +24,22 @@
                     <span class="subtitle">Sistema de Compras</span>
                 </div>
             </div>
-            <div class="user-section">
-                <div class="user-info">
-                    <span class="welcome">Bem-vindo, @ViewBag.Username</span>
-                    @if (ViewBag.UserRole != null)
+                <div class="user-section">
+                    <div class="user-info">
+                        <span class="welcome">Bem-vindo, @ViewBag.Username</span>
+                        @if (ViewBag.UserRole != null)
+                        {
+                            <span class="role-badge">@ViewBag.UserRole</span>
+                        }
+                    </div>
+                    @if (ViewBag.UserRole?.ToString() == UserRole.Administrador.ToString())
                     {
-                        <span class="role-badge">@ViewBag.UserRole</span>
+                        <a asp-action="Users" asp-controller="Admin" class="btn-logout">Usuários</a>
                     }
+                    <form asp-action="Logout" asp-controller="Login" method="post" style="display: inline;">
+                        <button type="submit" class="btn-logout">Sair</button>
+                    </form>
                 </div>
-                <form asp-action="Logout" asp-controller="Login" method="post" style="display: inline;">
-                    <button type="submit" class="btn-logout">Sair</button>
-                </form>
-            </div>
         </div>
     </header>
 
@@ -132,7 +136,7 @@
                 <!-- Tabs Navigation -->
                 <div class="tabs-container">
                     <button class="tab-button active" onclick="showTab('menor-valor')">
-                        📊 Menor valor
+                        📊 Relatório
                     </button>
                     <button class="tab-button" onclick="showTab('dashboard')">
                         📈 Dashboard
@@ -141,6 +145,17 @@
 
                 <!-- Tab 1: Menor Valor -->
                 <div id="tab-menor-valor" class="tab-content active">
+                    <div class="table-controls">
+                        <div class="page-size">
+                            <label for="pageSizeSelect">Itens por página (Nº de itens)</label>
+                            <select id="pageSizeSelect" class="search-select">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="table-container">
                         <table class="data-table">
                             <thead>
@@ -154,7 +169,7 @@
                                     <th>Valor Total</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="relatorioTableBody">
                                 @foreach (var item in Model.MenorValorItems)
                                 {
                                     <tr>
@@ -169,6 +184,11 @@
                                 }
                             </tbody>
                         </table>
+                    </div>
+                    <div class="pager footer">
+                        <button type="button" id="prevPage" class="btn-clear">Anterior</button>
+                        <span id="pageInfo" class="pager-info">Página 1 de 1</span>
+                        <button type="button" id="nextPage" class="btn-search">Próxima</button>
                     </div>
                 </div>
 
@@ -253,6 +273,17 @@
 
                             <div class="analysis-table">
                                 <div class="chart-title">Comparativo por pedido de compra</div>
+                                <div class="table-controls">
+                                    <div class="page-size">
+                                        <label for="dashboardPageSizeSelect">Itens por página (Nº de itens)</label>
+                                        <select id="dashboardPageSizeSelect" class="search-select">
+                                            <option value="10" selected>10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 <div class="table-scroll">
                                     <table class="table-mini">
                                         <thead>
@@ -268,6 +299,11 @@
                                         </thead>
                                         <tbody id="analysisTableBody"></tbody>
                                     </table>
+                                </div>
+                                <div class="pager footer">
+                                    <button type="button" id="dashboardPrevPage" class="btn-clear">Anterior</button>
+                                    <span id="dashboardPageInfo" class="pager-info">Página 1 de 1</span>
+                                    <button type="button" id="dashboardNextPage" class="btn-search">Próxima</button>
                                 </div>
                             </div>
                         </div>
@@ -319,6 +355,56 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            const body = document.getElementById('relatorioTableBody');
+            const pageSizeSelect = document.getElementById('pageSizeSelect');
+            const prevPage = document.getElementById('prevPage');
+            const nextPage = document.getElementById('nextPage');
+            const pageInfo = document.getElementById('pageInfo');
+            let currentPage = 1;
+
+            const getRows = () => body ? Array.from(body.querySelectorAll('tr')) : [];
+            const getPageSize = () => parseInt(pageSizeSelect?.value || '10', 10);
+
+            const renderPage = () => {
+                const rows = getRows();
+                const pageSize = getPageSize();
+                const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+                currentPage = Math.min(currentPage, totalPages);
+
+                rows.forEach((row, index) => {
+                    const start = (currentPage - 1) * pageSize;
+                    const end = start + pageSize;
+                    row.style.display = index >= start && index < end ? '' : 'none';
+                });
+
+                if (pageInfo) pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+                if (prevPage) prevPage.disabled = currentPage <= 1;
+                if (nextPage) nextPage.disabled = currentPage >= totalPages;
+            };
+
+            if (pageSizeSelect) {
+                pageSizeSelect.addEventListener('change', () => {
+                    currentPage = 1;
+                    renderPage();
+                });
+            }
+
+            if (prevPage) {
+                prevPage.addEventListener('click', () => {
+                    currentPage = Math.max(1, currentPage - 1);
+                    renderPage();
+                });
+            }
+
+            if (nextPage) {
+                nextPage.addEventListener('click', () => {
+                    currentPage = currentPage + 1;
+                    renderPage();
+                });
+            }
+
+            renderPage();
+
             const params = new URLSearchParams(window.location.search);
             const tab = params.get('tab');
             if (tab && document.getElementById('tab-' + tab)) {

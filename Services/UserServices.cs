@@ -31,6 +31,16 @@ namespace AppCompras.Services
                 return ServiceResult<UserViewModel>.Fail("Usuário ou senha inválidos");
             }
 
+            if (user.Status == UserStatus.Inativo)
+            {
+                return ServiceResult<UserViewModel>.Fail("Usuário inativo. Contate o administrador.");
+            }
+
+            if (user.Status == UserStatus.Bloqueado)
+            {
+                return ServiceResult<UserViewModel>.Fail("Usuário bloqueado. Contate o administrador.");
+            }
+
             // Se o usuário for encontrado e a senha verificada, cria o ViewModel
             var model = new UserViewModel
             {
@@ -72,7 +82,8 @@ namespace AppCompras.Services
                 Email = model.Email,
                 Password = BCrypt.Net.BCrypt.HashPassword(model.Password), // Criptografa a senha antes de salvar no banco
                 Name = model.Name,
-                Role = UserRole.Comprador // Todo novo cadastro começa como Comprador por padrão
+                Role = UserRole.Comprador, // Todo novo cadastro começa como Comprador por padrão
+                Status = UserStatus.Ativo
             };
 
             context.Users.Add(user);

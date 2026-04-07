@@ -1,0 +1,154 @@
+@model List<AppCompras.Models.User>
+@using AppCompras.Models.Data
+@{
+    ViewData["Title"] = "Administração de usuários";
+    Layout = null;
+    var total = Model.Count;
+    var admins = Model.Count(u => u.Role == UserRole.Administrador);
+    var buyers = Model.Count(u => u.Role == UserRole.Comprador);
+}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="icon" type="image/png" href="~/img/logo-40-anos.png" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin-users.css" />
+</head>
+<body>
+    <div class="page-shell">
+        <div class="topbar">
+            <div class="topbar-logo">
+                <img src="~/img/logo-40-anos.png" alt="Logo 40 anos Fazenda Santa Fé" />
+            </div>
+            <span class="topbar-title">Administração de usuários</span>
+            <div class="topbar-right">
+                <span class="topbar-admin">Admin: <span>@ViewBag.Username</span></span>
+                <a asp-action="AuditLogs" asp-controller="Admin" class="topbar-btn">Logs</a>
+                <a asp-action="Index" asp-controller="Compras" class="topbar-btn">Voltar</a>
+            </div>
+        </div>
+
+        <div class="content">
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-error">@TempData["ErrorMessage"]</div>
+            }
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+            }
+
+            <div class="page-header">
+                <div>
+                    <div class="page-title">Usuários</div>
+                    <div class="stats-row">
+                        <div class="stat-pill"><b>@total</b> total</div>
+                        <div class="stat-pill"><b>@admins</b> administradores</div>
+                        <div class="stat-pill"><b>@buyers</b> compradores</div>
+                    </div>
+                </div>
+                <a asp-action="CreateUser" class="btn-primary">
+                    <span class="plus-icon">+</span>
+                    Novo usuário
+                </a>
+            </div>
+
+            <div class="search-row">
+                <div class="search-wrap">
+                    <span class="search-icon">⌕</span>
+                    <input id="userSearch" class="search-input" type="text" placeholder="Buscar por nome, usuário ou e-mail..." />
+                </div>
+                <select id="roleFilter" class="filter-select">
+                    <option value="">Todos os perfis</option>
+                    <option value="Administrador">Administrador</option>
+                    <option value="Comprador">Comprador</option>
+                </select>
+            </div>
+
+            <div class="table-card">
+                <table class="table" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th>E-mail</th>
+                            <th>Perfil</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model)
+                        {
+                            var initials = string.Join("", (user.Name ?? user.Username ?? "")
+                                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                .Select(s => s.Substring(0, 1))
+                                .Take(2))
+                                .ToUpperInvariant();
+                            var badgeClass = user.Role == UserRole.Administrador ? "badge-admin" : "badge-buyer";
+                            var statusClass = user.Status == UserStatus.Ativo
+                                ? "status-active"
+                                : user.Status == UserStatus.Inativo
+                                    ? "status-inactive"
+                                    : "status-blocked";
+                            var statusText = user.Status == UserStatus.Ativo
+                                ? "Ativo"
+                                : user.Status == UserStatus.Inativo
+                                    ? "Inativo"
+                                    : "Bloqueado";
+                            <tr data-role="@user.Role" data-search="@(user.Name) @(user.Username) @(user.Email)">
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="avatar @(user.Role == UserRole.Administrador ? "avatar-blue" : "avatar-teal")">@initials</div>
+                                        <div>
+                                            <div class="user-name">@user.Name</div>
+                                            <div class="user-login">@user.Username</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="email-link">@user.Email</span></td>
+                                <td><span class="badge @badgeClass"><span class="badge-dot"></span>@user.Role</span></td>
+                                <td><span class="status-dot @statusClass"></span> <span class="status-text @statusClass">@statusText</span></td>
+                                <td>
+                                    <div class="actions">
+                                        <a asp-action="EditUser" asp-route-id="@user.Id" class="btn-edit">Editar</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (Model.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="5" class="empty-row">Nenhum usuário encontrado.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('userSearch');
+        const roleFilter = document.getElementById('roleFilter');
+        const rows = Array.from(document.querySelectorAll('#usersTable tbody tr'));
+
+        const applyFilter = () => {
+            const term = (searchInput?.value || '').toLowerCase().trim();
+            const role = roleFilter?.value || '';
+            rows.forEach(row => {
+                const hay = (row.getAttribute('data-search') || '').toLowerCase();
+                const rowRole = row.getAttribute('data-role') || '';
+                const matchTerm = !term || hay.includes(term);
+                const matchRole = !role || rowRole === role;
+                row.style.display = matchTerm && matchRole ? '' : 'none';
+            });
+        };
+
+        if (searchInput) searchInput.addEventListener('input', applyFilter);
+        if (roleFilter) roleFilter.addEventListener('change', applyFilter);
+    </script>
+</body>
+</html>
