@@ -1,4 +1,10 @@
 wwwroot/lib/* linguist-vendored
 wwwroot/lib/** linguist-vendored
+wwwroot/css/* linguist-vendored
+wwwroot/css/** linguist-vendored
+wwwroot/js/* linguist-vendored
+wwwroot/js/** linguist-vendored
+Views/* linguist-vendored
+Views/** linguist-vendored
 Documents/* linguist-vendored
 logo/* linguist-vendored
