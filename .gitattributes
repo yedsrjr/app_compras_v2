@@ -1,0 +1,4 @@
+wwwroot/lib/* linguist-vendored
+wwwroot/lib/** linguist-vendored
+Documents/* linguist-vendored
+logo/* linguist-vendored
