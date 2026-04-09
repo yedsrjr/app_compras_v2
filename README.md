@@ -4,7 +4,7 @@ Segunda versao do projeto [app_compras](https://github.com/yedsrjr/app_compras).
 
 Sistema web para consulta e analise de pedidos de compra, com autenticacao de usuarios, controle administrativo e integracao com uma API externa para busca de dados de compras.
 
-## Evolucao do projeto
+## Evolução do projeto
 
 Este repositorio representa a evolucao da primeira versao do sistema `app_compras`.
 
